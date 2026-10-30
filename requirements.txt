@@ -1,4 +1,5 @@
 ultralytics
+lap            # ultralytics needs it for tracker="bytetrack.yaml"; not pulled in automatically
 opencv-python
 numpy
 paho-mqtt>=2.0
