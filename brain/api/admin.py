@@ -11,6 +11,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
+from brain.anomaly import AnomalyError
 from brain.api import get_brain
 from brain.constants import KEYHOLDER_ROLES
 from brain.settings import settings
@@ -41,6 +42,39 @@ def require_role(x_role_token: str | None = Header(default=None)) -> str:
 @router.post("/auth/whoami")
 def whoami(role: str = Depends(require_role)) -> dict[str, Any]:
     return {"role": role, "keyholder_roles": list(KEYHOLDER_ROLES)}
+
+
+@router.get("/learning")
+def learning_status(cam: str | None = None, brain=Depends(get_brain)) -> dict[str, Any]:
+    """Per camera: whether it is learning, how much baseline it has, and whether
+    it has a trained model yet."""
+    return brain.anomaly.status(cam)
+
+
+@router.post("/learning/{cam}/start")
+def learning_start(cam: str, brain=Depends(get_brain)) -> dict[str, Any]:
+    if brain.config.cam(cam) is None:
+        raise HTTPException(404, f"no such cam: {cam}")
+    return brain.anomaly.start_learning(cam)
+
+
+@router.post("/learning/{cam}/stop")
+def learning_stop(cam: str, brain=Depends(get_brain)) -> dict[str, Any]:
+    """Stop learning and train. Fails loudly if there is too little baseline."""
+    if brain.config.cam(cam) is None:
+        raise HTTPException(404, f"no such cam: {cam}")
+    try:
+        return brain.anomaly.stop_learning(cam)
+    except AnomalyError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.post("/learning/{cam}/forget")
+def learning_forget(cam: str, brain=Depends(get_brain)) -> dict[str, Any]:
+    """Throw away this camera's model and baseline and start over."""
+    if brain.config.cam(cam) is None:
+        raise HTTPException(404, f"no such cam: {cam}")
+    return brain.anomaly.forget(cam)
 
 
 @router.post("/debug/seal/{cam}")

@@ -123,14 +123,20 @@ def sc_walk(t: float) -> list[Body]:
 
 
 def sc_crowd(t: float) -> list[Body]:
-    """Ramp 2 -> 12 people over 20 s: trips crowd by count and by rate of change."""
+    """Ramp 2 -> 12 people over 20 s: trips crowd by count and by rate of change.
+
+    Everyone shuffles a little. A perfectly static crowd would report zero
+    speed, which is not what a filling gate looks like and would teach the
+    anomaly model something untrue.
+    """
     n = 2 + int(min(10.0, (t / 20.0) * 10.0))
     bodies = []
     for i in range(n):
+        drift = 0.02 * math.sin(t * 0.9 + i * 1.7)
         bodies.append(Body(
             tid=10 + i,
-            x=0.12 + 0.76 * ((i * 0.37) % 1.0),
-            y=0.55 + 0.35 * ((i * 0.61) % 1.0),
+            x=_clamp(0.12 + 0.76 * ((i * 0.37) % 1.0) + drift, 0.06, 0.94),
+            y=_clamp(0.55 + 0.35 * ((i * 0.61) % 1.0) + drift * 0.6, 0.4, 0.97),
         ))
     return bodies
 

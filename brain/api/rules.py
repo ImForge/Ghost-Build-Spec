@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 from brain.api import get_brain
 from brain.config import DEFAULT_PARAMS, slugify
 from brain.constants import ALERT_TYPES, SEVERITIES
+from brain.nlrules import NlRuleError, parse as parse_nl
 from brain.rules import registered_types
 
 log = logging.getLogger("brain.api.rules")
@@ -93,6 +94,28 @@ def rule_types() -> dict[str, Any]:
         "defaults": DEFAULT_PARAMS,
         "severities": list(SEVERITIES),
     }
+
+
+class NlRuleRequest(BaseModel):
+    text: str
+
+
+@router.post("/rules/nl")
+def parse_natural_language(body: NlRuleRequest, brain=Depends(get_brain)) -> dict[str, Any]:
+    """Translate a sentence into a rule — and return it WITHOUT saving.
+
+    The dashboard shows the result as a filled-in form so a person confirms it
+    before it becomes a rule. A model that invents a zone id would otherwise
+    install something that silently never fires.
+    """
+    try:
+        rule = parse_nl(brain.config, body.text)
+    except NlRuleError as exc:
+        raise HTTPException(
+            exc.status, {"message": str(exc), "raw": exc.raw} if exc.raw else str(exc)
+        ) from exc
+    brain.db.audit("api", "rule_nl", rule["type"], {"text": body.text[:200]})
+    return {"rule": rule, "saved": False}
 
 
 @router.post("/rules", status_code=201)

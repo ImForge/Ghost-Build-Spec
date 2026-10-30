@@ -160,3 +160,39 @@ enough to answer a command. That surfaced while testing, and it is the right
 behaviour: the alternative — a unique client id per process — would let two
 nodes publish as the same camera and quietly double every count. The conflict is
 visible in both nodes' logs within a second.
+
+## D17 — IsolationForest alone did not detect the headline case
+
+The spec's anomaly design is an IsolationForest over eight features, flagged on
+`predict(x) == -1`. Built that way it did not work: a window with ten times the
+usual number of people — sixty-six sigma out in one dimension — scored as
+perfectly ordinary. Two reasons, both inherent to the algorithm:
+
+* it picks a split feature uniformly at random and splits inside that feature's
+  observed range, so a dimension with a narrow absolute spread (a count of 1–3)
+  is drowned out by one with a wide spread (a dwell of 5–11 seconds); and
+* it does not extrapolate. A point far outside the training range is not
+  isolated meaningfully faster than one inside it.
+
+Two changes fix it. The forest is fitted on standardised features, so every
+dimension is comparable and the model sees what the explanation reports. And a
+window is flagged if the forest says so **or** if any single feature is four or
+more sigma from normal, on a floored scale so a feature that never varied during
+learning cannot turn a rounding difference into a thousand sigma. The two cyclic
+time features are excluded from that gate: two minutes of baseline cannot
+establish which hour is unusual, and every window after the learning hour would
+otherwise flag.
+
+Measured afterwards: four and ten times the usual occupancy, unusual speed,
+someone lying down and a long dwell are all flagged; 1.5 times the usual
+occupancy and a different hour are not; and zero false positives across 160
+ordinary windows.
+
+## D18 — An unusual window is one occurrence
+
+The engine ticks at 10 Hz but the anomaly score only changes every five seconds,
+so the rule was raising the same finding fifty times per real change and an
+alert's `count` reached 526 for about fifty seconds of activity. The rule now
+keys on the timestamp of the scored window, so `count` reads as the number of
+unusual windows — 7 for forty-five seconds — which is a number that means
+something.

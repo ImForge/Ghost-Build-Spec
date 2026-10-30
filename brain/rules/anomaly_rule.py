@@ -33,6 +33,11 @@ class AnomalyRule(Rule):
         flags = list(cam_state.anomaly_flags)
         if len(flags) < needed or not all(flags[-needed:]):
             return []
+        # One unusual window is one occurrence. The engine ticks at 10 Hz but
+        # the score only changes every five seconds, so without this the alert's
+        # count would climb fifty times faster than anything actually happened.
+        if cam_state.already_reported(f"anomaly:{cam_state.cam}", cam_state.anomaly_at):
+            return []
 
         explain = cam_state.anomaly_explain or []
         if explain:

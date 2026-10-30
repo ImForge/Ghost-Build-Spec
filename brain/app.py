@@ -28,6 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from brain import alerts as alerts_mod
 from brain import rules as rules_mod
 from brain.alerts import AlertManager
+from brain.anomaly import AnomalyService
 from brain.config import ConfigStore
 from brain.constants import (
     CONFIG_RELOAD_PERIOD_S, HEALTH_PERIOD_S, HOUSEKEEPING_PERIOD_S, PROJECT_NAME,
@@ -76,6 +77,7 @@ class Brain:
         self.alerts = AlertManager(self.db, self.bus, self.config)
         self.telegram = Telegram()
         self.escrow = Escrow(self.db, self.bus)
+        self.anomaly = AnomalyService(self.world, self.config, self.db)
         self.narrator = Narrator(self.bus, self.world, self.alerts, self.telegram)
         self.engine = Engine(self.world, self.config, self._on_candidate)
 
@@ -102,6 +104,7 @@ class Brain:
         self.bus.start()
         self.engine.start()
         self.narrator.start()
+        self.anomaly.start()
         for name, target in (("health", self._health_loop),
                              ("housekeeping", self._housekeeping_loop)):
             thread = threading.Thread(target=target, name=name, daemon=True)
@@ -111,6 +114,7 @@ class Brain:
 
     def stop(self) -> None:
         self._stop.set()
+        self.anomaly.stop()
         self.narrator.stop()
         self.engine.stop()
         for thread in self._threads:

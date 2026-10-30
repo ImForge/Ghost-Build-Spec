@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Calibrate } from "@/components/Calibrate";
+import { LearningTab } from "@/components/LearningTab";
+import { NlRuleBox } from "@/components/NlRuleBox";
 import { RuleForm } from "@/components/RuleForm";
 import { StatusDot } from "@/components/SeverityPill";
 import { ZoneEditor } from "@/components/ZoneEditor";
@@ -10,7 +12,7 @@ import { api } from "@/lib/api";
 import { fmtNum } from "@/lib/format";
 import type { Cam, Line, Rule, Zone } from "@/lib/types";
 
-const TABS = ["cams", "zones", "rules"] as const;
+const TABS = ["cams", "zones", "rules", "learning"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function AdminPage() {
@@ -78,6 +80,7 @@ export default function AdminPage() {
             onChange={reload}
           />
         ) : null}
+        {tab === "learning" ? <LearningTab cams={cams} /> : null}
       </div>
     </div>
   );
@@ -345,6 +348,8 @@ function RulesTab({
           + New rule
         </button>
       )}
+
+      <NlRuleBox cams={cams} zones={zones} lines={lines} onSaved={onChange} />
     </div>
   );
 }

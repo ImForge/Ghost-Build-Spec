@@ -153,6 +153,11 @@ class CamState:
     learning: bool = False
     anomaly_flags: deque[bool] = field(default_factory=lambda: deque(maxlen=5))
     anomaly_explain: list[dict[str, Any]] = field(default_factory=list)
+    # When the most recent window was scored. The anomaly rule keys on this so
+    # it reports once per window rather than once per 10 Hz tick — the signal
+    # only changes every five seconds, so ticking would inflate the alert's
+    # count fiftyfold and make it meaningless.
+    anomaly_at: float = 0.0
 
     @property
     def active(self) -> bool:
