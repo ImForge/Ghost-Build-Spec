@@ -59,3 +59,41 @@ The brain subscribes to `ghost/+/health` and publishes its own health on
 "brain" and reported 3 of 3 cameras online with one camera that did not exist.
 The bus now drops any message whose topic segment does not match `cam-\d{2}`,
 which is what §3.1 defines `{cam}` to be.
+
+## D8 — A line belongs to one side
+
+`side()` is three-valued, as §7.3 specifies, and that is right for the
+orientation tests inside `segments_intersect`. It is wrong for deciding whether
+someone crossed: coordinates arrive rounded to three decimals (§3.2), so a foot
+landing exactly on a drawn line is common, and a three-valued side turns one walk
+through a door into two crossings in *opposite* directions. Crossing decisions
+therefore use `half_plane()`, which counts the line itself as positive, so every
+point belongs to exactly one side and each walk produces exactly one crossing
+with the correct sign. `crossings` entries carry that sign, which is a small
+extension of the 2-tuple in §7.2.
+
+## D9 — Discrete events fire once; conditions accumulate a count
+
+§7.6 increments an alert's `count` every time a rule raises the same candidate.
+At 10 Hz that makes `count` meaningful for a *condition* — a person still on the
+floor, a zone still overcrowded — and meaningless for an *event*: one person
+walking through a door was arriving as `count: 6` simply because the crossing
+stayed inside a look-back window for six ticks.
+
+So the event rules now report each occurrence exactly once, via
+`CamState.already_reported`, keyed on the timestamp of the thing itself: the
+crossing time for tripwire, the newest crossing in the burst for tailgate, the
+zone-entry time for entry. Leaving and re-entering produces a new timestamp and
+so a new alert. The condition rules (fall, crowd, crush, loiter, running, fight)
+keep firing while they hold, and their `count` reads as persistence.
+
+## D10 — The running scenario sits close to its own threshold
+
+`running-all` fires at 1.5 body-heights/second sustained for 1 second, and the
+spec's running scenario crosses the frame in 1.5 s, which works out at about
+1.8 bh/s on the straight and less across a turnaround. Measured over the rule's
+1-second window the mean lands at 1.5–1.8 depending on where the window falls,
+so the rule fires during the clean stretches rather than continuously. Both
+numbers are the spec's, they do work together, and the unit tests pin the
+behaviour at fixed timestamps — but anyone retuning one should know the other is
+close by.

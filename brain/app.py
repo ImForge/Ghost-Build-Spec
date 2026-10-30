@@ -27,6 +27,7 @@ from fastapi.staticfiles import StaticFiles
 
 from brain import alerts as alerts_mod
 from brain import rules as rules_mod
+from brain.alerts import AlertManager
 from brain.config import ConfigStore
 from brain.constants import (
     CONFIG_RELOAD_PERIOD_S, HEALTH_PERIOD_S, HOUSEKEEPING_PERIOD_S, PROJECT_NAME,
@@ -51,6 +52,7 @@ class Brain:
         self.db = Database(settings.db_path)
         self.bus = MqttBus(settings.broker_host, settings.broker_port, client_id="brain")
         rules_mod.load_all()
+        self.alerts = AlertManager(self.db, self.bus, self.config)
         self.engine = Engine(self.world, self.config, self._on_candidate)
 
         self._stop = threading.Event()
@@ -105,8 +107,7 @@ class Brain:
             state.snapshot_jpg = jpg
 
     def _on_candidate(self, candidate: Any, rule_cfg: dict[str, Any]) -> None:
-        """Where rule findings go. The alert pipeline replaces this in phase 3."""
-        log.info("candidate %s on %s: %s", candidate.type, candidate.cam, candidate.message)
+        self.alerts.create_or_update(candidate, rule_cfg)
 
     # --- helpers used by the API -----------------------------------------
     def request_snapshot(self, cam: str, timeout: float = 3.0) -> bytes | None:
@@ -192,9 +193,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"], allow_headers=["*"],
     )
 
-    from brain.api import cams, health, rules, zones
+    from brain.api import admin, alerts, cams, health, rules, zones
 
-    for router in (health.router, cams.router, zones.router, rules.router):
+    for router in (health.router, cams.router, zones.router, rules.router,
+                   alerts.router, admin.router):
         app.include_router(router, prefix="/api", tags=["api"])
 
     @app.get("/", include_in_schema=False)

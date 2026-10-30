@@ -125,8 +125,24 @@ class CamState:
     h: int = 480
 
     count_hist: dict[str, deque[tuple[float, int]]] = field(default_factory=dict)
-    crossings: dict[str, deque[tuple[float, int]]] = field(default_factory=dict)
+    # (t, track_id, direction) where direction is +1 for a crossing whose side
+    # sign went negative -> positive and -1 for the reverse. §7.2 describes a
+    # 2-tuple; the sign is carried so the tripwire rule can filter by direction
+    # from this authoritative, deduplicated record (docs/DECISIONS.md D8).
+    crossings: dict[str, deque[tuple[float, int, int]]] = field(default_factory=dict)
     pair_since: dict[tuple[int, int], float] = field(default_factory=dict)
+    # Rule bookkeeping for discrete events: key -> the timestamp of the last
+    # occurrence already reported. Crossings, tailgate bursts and zone entries
+    # are events, not conditions, so each must raise exactly one candidate
+    # however many engine ticks it stays visible for (docs/DECISIONS.md D9).
+    rule_marks: dict[str, float] = field(default_factory=dict)
+
+    def already_reported(self, key: str, occurred_at: float) -> bool:
+        """True if this occurrence has been reported; otherwise mark and return False."""
+        if self.rule_marks.get(key, 0.0) >= occurred_at:
+            return True
+        self.rule_marks[key] = occurred_at
+        return False
 
     health: dict[str, Any] = field(default_factory=dict)
     snapshot_jpg: bytes | None = None
@@ -162,17 +178,18 @@ class CamState:
                 return c
         return None
 
-    def record_crossing(self, line_id: str, now: float, track_id: int) -> None:
+    def record_crossing(self, line_id: str, now: float, track_id: int,
+                        direction: int = 0) -> None:
         hist = self.crossings.setdefault(line_id, deque())
-        hist.append((now, track_id))
+        hist.append((now, track_id, direction))
         cutoff = now - CROSSING_HIST_S
         while hist and hist[0][0] < cutoff:
             hist.popleft()
 
     def recent_crossings(self, line_id: str, window_s: float,
-                         now: float | None = None) -> list[tuple[float, int]]:
+                         now: float | None = None) -> list[tuple[float, int, int]]:
         now = time.time() if now is None else now
-        return [(t, i) for t, i in self.crossings.get(line_id, ()) if t >= now - window_s]
+        return [c for c in self.crossings.get(line_id, ()) if c[0] >= now - window_s]
 
     def prune(self, now: float) -> list[int]:
         """Drop tracks nobody has seen lately. Returns the ids removed."""
@@ -242,13 +259,6 @@ class World:
                 _update_geometry(state, track, zones, lines, now)
 
             state.prune(now)
-            # Zone occupancy is sampled once per event so the crowd rule's
-            # rate-of-change has an evenly spaced series to difference.
-            for zone in zones:
-                if zone.get("cam") != cam_id:
-                    continue
-                inside = sum(1 for t in state.tracks.values() if zone["id"] in t.in_zones)
-                state.record_count(str(zone["id"]), now, inside)
             return state
 
     def set_health(self, cam_id: str, health: dict[str, Any]) -> None:
@@ -319,6 +329,7 @@ def _update_geometry(state: CamState, track: TrackState,
         a, b = line.get("a") or [0, 0], line.get("b") or [0, 0]
         current = geo.side(a, b, foot)
         if prev is not None:
-            if geo.crossed_line(prev.foot, foot, a, b, "any"):
-                state.record_crossing(lid, now, track.id)
+            went = geo.crossing_direction(prev.foot, foot, a, b)
+            if went:
+                state.record_crossing(lid, now, track.id, went)
         track.last_side[lid] = current

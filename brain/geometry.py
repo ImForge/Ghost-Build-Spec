@@ -111,6 +111,20 @@ def side(a: Sequence[float], b: Sequence[float], p: Sequence[float]) -> int:
     return 0
 
 
+def half_plane(a: Sequence[float], b: Sequence[float], p: Sequence[float]) -> int:
+    """Which side of a->b the point p is on, with the line itself counted positive.
+
+    `side` is three-valued and that is right for orientation tests, but a
+    crossing test needs every point to belong to exactly one side. Coordinates
+    arrive rounded to three decimals (§3.2), so landing exactly on a drawn line
+    is common rather than exotic — and when it happens, a three-valued side turns
+    one walk through a door into two crossings in opposite directions.
+    """
+    cross = ((float(b[0]) - float(a[0])) * (float(p[1]) - float(a[1]))
+             - (float(b[1]) - float(a[1])) * (float(p[0]) - float(a[0])))
+    return 1 if cross >= 0 else -1
+
+
 def _orientation(p: Sequence[float], q: Sequence[float], r: Sequence[float]) -> int:
     return side(p, q, r)
 
@@ -141,24 +155,33 @@ def segments_intersect(p1: Sequence[float], p2: Sequence[float],
     return False
 
 
+def crossing_direction(prev_foot: XY, cur_foot: XY, a: Sequence[float],
+                       b: Sequence[float]) -> int:
+    """+1, -1 or 0 (no crossing) for the move from prev_foot to cur_foot.
+
+    Both tests are needed: the half-plane flips anywhere along the *infinite*
+    line, so without the segment test someone walking past the end of a doorway
+    would register as walking through it.
+    """
+    before = half_plane(a, b, prev_foot)
+    after = half_plane(a, b, cur_foot)
+    if before == after:
+        return 0
+    if not segments_intersect(prev_foot, cur_foot, a, b):
+        return 0
+    return 1 if before < after else -1
+
+
 def crossed_line(prev_foot: XY, cur_foot: XY, a: Sequence[float], b: Sequence[float],
                  direction: str = "any") -> bool:
-    """Did the walker cross this line between two samples, in the right direction?
-
-    Both tests are needed: the side sign flips anywhere along the infinite line,
-    so without the segment test someone walking past the end of a doorway would
-    register as walking through it.
-    """
-    prev_side = side(a, b, prev_foot)
-    cur_side = side(a, b, cur_foot)
-    if prev_side == cur_side:
-        return False
-    if not segments_intersect(prev_foot, cur_foot, a, b):
+    """Did the walker cross this line between two samples, the right way?"""
+    went = crossing_direction(prev_foot, cur_foot, a, b)
+    if went == 0:
         return False
     if direction == "pos":
-        return prev_side <= 0 and cur_side > 0
+        return went == 1
     if direction == "neg":
-        return prev_side >= 0 and cur_side < 0
+        return went == -1
     return True
 
 
