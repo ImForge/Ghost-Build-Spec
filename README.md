@@ -1,8 +1,10 @@
 # GHOST
 
 **Privacy-first edge-AI campus safety.** Cameras turn people into skeletons at the
-edge. Only skeleton JSON leaves the device — about **2 kB/s per camera instead of
-~400 kB/s of video**, and zero pixels. A local brain box turns those skeletons into
+edge. Only skeleton JSON leaves the device — measured at **0.7 kB/s for an empty
+corridor, ~5 kB/s with one person and ~19 kB/s with a crowd of four, against
+~400 kB/s for the equivalent video stream** — and zero pixels. The dashboard's
+PrivacyMeter shows the live measured figure rather than this claim. A local brain box turns those skeletons into
 plain-English alerts on a live top-down digital twin: falls, crowding, crush risk,
 unauthorized entry, tailgating, loitering, running, fighting, and anomalies it
 learns for itself. Raw evidence is encrypted on the camera and can only be opened

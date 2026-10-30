@@ -41,3 +41,21 @@ is verified by publishing synthetic skeleton events that satisfy §3.2, plus
 `tools/make_test_video.py` for a file source that exercises capture, the motion
 gate and the publish path. The checks that genuinely need hardware are listed as a
 human checklist in `docs/TESTING.md` rather than silently skipped.
+
+## D6 — The bandwidth claim is whatever the meter measures
+
+An early draft of the README said "about 2 kB/s per camera". Measurement says
+otherwise: an idle corridor with no detections is ~0.7 kB/s, one person at 10 Hz
+is ~5 kB/s, and four people is ~19 kB/s, because a 17-keypoint person costs
+roughly 400 bytes on the wire and the event rate is fixed. The saving against
+video is 20x to 500x depending on occupancy, not a single number, so the README
+quotes the measured range and the dashboard's PrivacyMeter reports the live sum
+of `bytes_out_per_s` instead of any figure written in advance.
+
+## D7 — `ghost/+/health` also matches the brain
+
+The brain subscribes to `ghost/+/health` and publishes its own health on
+`ghost/brain/health`, so it initially ingested itself as a camera called
+"brain" and reported 3 of 3 cameras online with one camera that did not exist.
+The bus now drops any message whose topic segment does not match `cam-\d{2}`,
+which is what §3.1 defines `{cam}` to be.
