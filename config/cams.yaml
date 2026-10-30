@@ -1,0 +1,18 @@
+# GHOST cameras. Hot-reloaded by the brain (mtime checked every 2 s).
+# default_rect is floor-plan px [x, y, w, h], used until a homography is calibrated.
+cams:
+  - id: cam-01
+    name: Corridor B
+    default_rect: [100, 100, 600, 400]
+    homography: null
+    px_per_m: 40
+  - id: cam-02
+    name: Main Gate
+    default_rect: [900, 100, 600, 400]
+    homography: null
+    px_per_m: 40
+  - id: cam-03
+    name: Library Stairs
+    default_rect: [100, 550, 600, 350]
+    homography: null
+    px_per_m: 40

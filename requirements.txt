@@ -1,0 +1,17 @@
+ultralytics
+opencv-python
+numpy
+paho-mqtt>=2.0
+fastapi
+uvicorn[standard]
+python-multipart
+pyyaml
+shapely
+scikit-learn
+pycryptodome
+requests
+pillow
+python-dotenv
+pydantic>=2
+pytest
+httpx

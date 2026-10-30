@@ -1,0 +1,25 @@
+# Rule fields: id, type, cam ("*" = every cam with recent events), zone?, line?,
+# enabled, severity, cooldown_s, hours? (list of ["HH:MM","HH:MM"] local, wraps
+# midnight; omitted = always active), params{}. Missing params use code defaults.
+rules:
+  - {id: fall-all,     type: fall,     cam: "*", enabled: true, severity: critical, cooldown_s: 30,
+     params: {drop_rate: 1.0, torso_angle_deg: 60, aspect_min: 1.2, still_s: 1.5, still_max_disp: 0.02}}
+  - {id: crowd-gate,   type: crowd,    cam: cam-02, zone: gate-area, enabled: true, severity: high, cooldown_s: 60,
+     params: {max_count: 15, max_density: 2.5, rate_per_s: 0.5}}
+  - {id: crowd-corr,   type: crowd,    cam: cam-01, zone: corridor-b, enabled: true, severity: high, cooldown_s: 60,
+     params: {max_count: 6, max_density: 2.5, rate_per_s: 0.4}}
+  - {id: crush-all,    type: crush,    cam: "*", enabled: true, severity: critical, cooldown_s: 60,
+     params: {min_people: 4, max_nn_dist_m: 0.5}}
+  - {id: entry-server, type: entry,    cam: cam-01, zone: server-room, enabled: true, severity: high, cooldown_s: 60,
+     hours: [["00:00", "23:59"]]}
+  - {id: door-1-trip,  type: tripwire, cam: cam-01, line: door-1, enabled: true, severity: medium, cooldown_s: 10}
+  - {id: door-1-tail,  type: tailgate, cam: cam-01, line: door-1, enabled: true, severity: medium, cooldown_s: 10,
+     params: {window_s: 2.0}}
+  - {id: loiter-corr,  type: loiter,   cam: cam-01, zone: corridor-b, enabled: true, severity: low, cooldown_s: 300,
+     params: {dwell_s: 20}}
+  - {id: running-all,  type: running,  cam: "*", enabled: true, severity: low, cooldown_s: 20,
+     params: {speed_bh_s: 1.5, sustain_s: 1.0}}
+  - {id: fight-all,    type: fight,    cam: "*", enabled: true, severity: critical, cooldown_s: 30,
+     params: {wrist_speed_bh_s: 2.0, sustain_s: 1.0, max_center_dist_bh: 0.6}}
+  - {id: anomaly-all,  type: anomaly,  cam: "*", enabled: true, severity: medium, cooldown_s: 60,
+     params: {consecutive_windows: 2}}

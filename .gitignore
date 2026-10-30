@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Models (downloaded on first run)
+*.pt
+*.onnx
+*.engine
+*_openvino_model/
+
+# Runtime data: db, evidence, snapshots, anomaly models
+brain/data/
+
+# Secrets
+.env
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dashboard/.env.local
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
