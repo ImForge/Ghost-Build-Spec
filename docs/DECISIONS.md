@@ -196,3 +196,24 @@ alert's `count` reached 526 for about fifty seconds of activity. The rule now
 keys on the timestamp of the scored window, so `count` reads as the number of
 unusual windows — 7 for forty-five seconds — which is a number that means
 something.
+
+## D19 — `#gate[hidden]` has to be said explicitly
+
+The browser node's start overlay is `display: grid`, set through an id
+selector. That outranks the browser's own `[hidden] { display: none }`, so
+setting `hidden` in JavaScript did nothing and the overlay stayed on top of the
+camera view permanently. Found by a browser check asserting the gate had closed;
+invisible to any amount of reading.
+
+## D20 — The browser node was verified with a fake camera, not a phone
+
+No phone exists in the build environment, but Chromium has one:
+`--use-fake-device-for-media-stream` provides a real `getUserMedia` stream. The
+two CDNs the page uses are blocked by this container's proxy, so the MQTT
+library is served from the copy already in `dashboard/node_modules` and only
+MediaPipe itself is stubbed — the mapping, tracking, publishing, drawing,
+snapshot and command paths are the shipped code, talking to the real broker.
+That run put 83 contract-valid skeleton events on `ghost/cam-03/skel`.
+
+What still needs a human is in `docs/TESTING.md`: a real phone, the Chrome flag,
+a real camera and whether MediaPipe finds actual people.

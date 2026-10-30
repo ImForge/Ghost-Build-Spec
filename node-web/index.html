@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d10" />
+    <title>GHOST node</title>
+    <style>
+      :root {
+        --bg: #0b0d10;
+        --panel: #13161b;
+        --border: #232830;
+        --ink: #e6e8eb;
+        --muted: #8b93a1;
+        --ok: #2ecc71;
+        --warn: #ff9f1c;
+        --bad: #ff3b3b;
+        --accent: #7c5cff;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        overscroll-behavior: none;
+      }
+      #stage { position: fixed; inset: 0; background: #000; }
+      #video, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+      #video { object-fit: cover; }
+      #overlay { pointer-events: none; }
+
+      #status {
+        position: fixed; left: 0; right: 0; top: 0; z-index: 3;
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+        padding: 10px 14px calc(10px + env(safe-area-inset-top));
+        background: linear-gradient(#0b0d10f2, #0b0d10b3);
+        font-size: 14px;
+      }
+      #status .num {
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      #proof {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 3;
+        padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+        background: linear-gradient(#0b0d1000, #0b0d10f2);
+        font-size: 13px; color: var(--muted); text-align: center;
+      }
+      #proof b { color: var(--ok); font-family: ui-monospace, monospace; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: #3a414c; flex: 0 0 auto; }
+      .dot.on { background: var(--ok); }
+      .dot.bad { background: var(--bad); }
+
+      #gate {
+        position: fixed; inset: 0; z-index: 10; display: grid; place-items: center;
+        padding: 24px; background: var(--bg); text-align: center;
+      }
+      /* An id selector outranks the browser's own [hidden] { display: none },
+         so without this the start overlay stays on top of the camera for good. */
+      #gate[hidden] { display: none; }
+      #gate .card { max-width: 420px; }
+      #gate h1 { margin: 0 0 6px; font-size: 20px; }
+      #gate p { margin: 8px 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+      #gate code {
+        font-family: ui-monospace, monospace; color: var(--ink);
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 4px; padding: 1px 5px; font-size: 13px;
+        word-break: break-all;
+      }
+      button {
+        margin-top: 14px; padding: 12px 22px; font-size: 16px;
+        background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+      }
+      .err { color: var(--bad); }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div id="status" hidden>
+      <span class="dot" id="dot"></span>
+      <span class="num" id="cam">cam-??</span>
+      <span class="num" id="fps">0 fps</span>
+      <span class="num" id="rate">0 B/s</span>
+      <span class="num" id="people">0 people</span>
+      <span id="link">connecting</span>
+    </div>
+
+    <div id="proof" hidden>
+      This phone is a skeleton camera. Pixels sent: <b id="pixels">0</b>
+    </div>
+
+    <div id="gate">
+      <div class="card">
+        <h1>GHOST camera node</h1>
+        <p id="gate-text">
+          This turns the phone into a camera that never sends a picture. The
+          video stays here; only joint positions leave.
+        </p>
+        <p class="num"><code id="gate-cam">cam-??</code> → <code id="gate-broker">…</code></p>
+        <button id="start">Use this camera</button>
+        <p id="gate-error" class="err"></p>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
