@@ -156,3 +156,29 @@ def test_a_fallen_track_is_kept_alive_longer_than_a_normal_one(h: Harness):
     assert 30 in state.tracks, "a fall candidate must survive the normal track TTL"
     state.prune(t + 3.5)   # past the extended TTL
     assert 30 not in state.tracks
+
+
+def test_the_reported_drop_rate_does_not_decay_to_zero(h: Harness):
+    """By the time stillness is established the drop is outside the look-back
+    window, so a live measurement would read 0.0 and the alert would describe
+    itself as a fall at no speed at all."""
+    fired = _play_fall(h)
+    assert fired
+    rates = [c.features["drop_rate"] for _t, c in fired]
+    assert min(rates) >= 1.0, f"drop_rate decayed over the alert's life: {rates}"
+    assert all("dropped 0.0 bh/s" not in c.message for _t, c in fired)
+
+
+def test_the_reported_drop_rate_is_physically_plausible(h: Harness):
+    """A human fall is a few body-heights per second, not tens of them.
+
+    track_height is a median over history, and it shrinks as someone ends up
+    lying down — so the same drop re-measured later reads faster and faster.
+    """
+    fired = _play_fall(h)
+    rates = sorted({c.features["drop_rate"] for _t, c in fired})
+    # The rate may be re-latched while the fall is still happening, as later and
+    # steeper pairs of samples come into view. Every value it settles on has to
+    # be a number a human body could produce.
+    assert rates, "no fall fired"
+    assert all(1.0 <= r <= 6.0 for r in rates), f"implausible drop rates: {rates}"

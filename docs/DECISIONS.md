@@ -97,3 +97,38 @@ so the rule fires during the clean stretches rather than continuously. Both
 numbers are the spec's, they do work together, and the unit tests pin the
 behaviour at fixed timestamps — but anyone retuning one should know the other is
 close by.
+
+## D11 — Turbopack is not optional in this Next version
+
+The spec asks for `create-next-app` without Turbopack. The flag is accepted, but
+the scaffold this version produces wires Tailwind 4 through
+`@tailwindcss/turbopack` as a Turbopack CSS loader and writes no PostCSS config
+at all, so building without Turbopack produces a page with no styles. Next 16
+also uses Turbopack for `build` by default. The scaffold is therefore left as
+generated, and `npm run build` passing is the check that matters.
+
+## D12 — The dashboard shell is pinned to the viewport
+
+The twin and the alert table scroll inside their own panels, so the page itself
+must not. That only works if something pins the flex column to the viewport
+height: with `min-h-full` on `body`, `flex-1` resolves against content instead
+of the screen, the right-hand column grows to fit all its cards, and the floor
+plan canvas inflates until it pushes everything off screen. `html` and `body`
+are `height: 100%`, `body` is a `flex flex-col overflow-hidden`, and `main` is
+`min-h-0 flex-1 overflow-hidden`. Pages that are documents rather than
+dashboards (`/login`) carry their own `overflow-y-auto`.
+
+## D13 — A fall's drop rate is latched, not re-measured
+
+The fall rule marks `drop_at` while the drop is inside its 2.5 s look-back
+window, then waits for stillness to accumulate — which takes long enough that
+the drop has scrolled out of the window by the time the alert fires. Reporting a
+live measurement at that point gave "dropped 0.0 bh/s", and de-duplication
+overwrote the original message with it.
+
+Remembering the peak was not enough either. `track_height` is the median bbox
+height over the track's history, and that shrinks as someone ends up lying down,
+so re-measuring the same drop against a smaller body read faster each tick and
+reached 10.7 bh/s — not a number a human can produce. The rate is now latched
+once, when a drop is first detected, and only re-latched for a genuinely later
+drop. The tests pin both properties: never zero, never implausible.

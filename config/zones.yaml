@@ -1,35 +1,69 @@
-# Polygons and lines in normalized camera coordinates (0-1, top-left origin).
-# kind: area | restricted | furniture   (furniture suppresses fall alerts inside it)
 zones:
-  - id: corridor-b
-    cam: cam-01
-    name: Corridor B
-    kind: area
-    polygon: [[0.05, 0.35], [0.95, 0.35], [0.95, 0.98], [0.05, 0.98]]
-    area_m2: 30
-  - id: server-room
-    cam: cam-01
-    name: Server Room Door
-    kind: restricted
-    polygon: [[0.70, 0.20], [0.98, 0.20], [0.98, 0.70], [0.70, 0.70]]
-    area_m2: 6
-  - id: bench-1
-    cam: cam-01
-    name: Bench
-    kind: furniture
-    polygon: [[0.05, 0.60], [0.30, 0.60], [0.30, 0.80], [0.05, 0.80]]
-    area_m2: 2
-  - id: gate-area
-    cam: cam-02
-    name: Main Gate
-    kind: area
-    polygon: [[0.02, 0.30], [0.98, 0.30], [0.98, 0.98], [0.02, 0.98]]
-    area_m2: 60
+- id: corridor-b
+  cam: cam-01
+  name: Corridor B
+  kind: area
+  polygon:
+  - - 0.05
+    - 0.35
+  - - 0.95
+    - 0.35
+  - - 0.95
+    - 0.98
+  - - 0.05
+    - 0.98
+  area_m2: 30
+- id: server-room
+  cam: cam-01
+  name: Server Room Door
+  kind: restricted
+  polygon:
+  - - 0.7
+    - 0.2
+  - - 0.98
+    - 0.2
+  - - 0.98
+    - 0.7
+  - - 0.7
+    - 0.7
+  area_m2: 6
+- id: bench-1
+  cam: cam-01
+  name: Bench
+  kind: furniture
+  polygon:
+  - - 0.05
+    - 0.6
+  - - 0.3
+    - 0.6
+  - - 0.3
+    - 0.8
+  - - 0.05
+    - 0.8
+  area_m2: 2
+- id: gate-area
+  cam: cam-02
+  name: Main Gate
+  kind: area
+  polygon:
+  - - 0.02
+    - 0.3
+  - - 0.98
+    - 0.3
+  - - 0.98
+    - 0.98
+  - - 0.02
+    - 0.98
+  area_m2: 60
 lines:
-  - id: door-1
-    cam: cam-01
-    name: Lab Door
-    kind: door
-    a: [0.70, 0.70]
-    b: [0.98, 0.70]
-    direction: any
+- id: door-1
+  cam: cam-01
+  name: Lab Door
+  kind: door
+  a:
+  - 0.7
+  - 0.7
+  b:
+  - 0.98
+  - 0.7
+  direction: any

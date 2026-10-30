@@ -55,7 +55,13 @@ class FallRule(Rule):
             height = track.height()
             drop_rate, drop_at = _worst_drop(track, now, height)
             if drop_at is not None and drop_rate >= drop_rate_min:
-                track.drop_at = drop_at
+                # Latch once per drop. Re-measuring the same drop on later ticks
+                # would inflate it: track_height is the median bbox height, and
+                # that shrinks as the person ends up lying down, so the same
+                # movement divided by a smaller body reads faster and faster.
+                if track.drop_at is None or drop_at > track.drop_at:
+                    track.drop_at = drop_at
+                    track.drop_rate = drop_rate
             if track.drop_at is None or now - track.drop_at > FALL_VALID_S:
                 continue
 
@@ -71,7 +77,10 @@ class FallRule(Rule):
                           cam_state.cam, track.id)
                 continue
 
-            rate = max(drop_rate, 0.0)
+            # The rate latched when the drop was detected, not a live
+            # measurement: by the time stillness is established the drop is
+            # outside the look-back window and would measure zero.
+            rate = max(track.drop_rate, 0.0)
             out.append(Candidate(
                 type=self.type,
                 severity=str(rule_cfg.get("severity", "critical")),

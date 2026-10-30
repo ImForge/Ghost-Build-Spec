@@ -86,7 +86,11 @@ class TrackState:
 
     # Rule scratch space. `drop_at` also extends the track's time-to-live so a
     # person who fell and is no longer being detected is not forgotten mid-alert.
+    # `drop_rate` is the peak measured at that moment: it has to be remembered,
+    # because once the drop scrolls out of the rule's look-back window the live
+    # measurement is zero and the alert would describe itself as a 0.0 bh/s fall.
     drop_at: float | None = None
+    drop_rate: float = 0.0
 
     @property
     def latest(self) -> Sample | None:

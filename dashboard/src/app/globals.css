@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* §8.2 — dark, dense, one accent per severity. No gradients, no glass. */
+:root {
+  --ghost-bg: #0b0d10;
+  --ghost-panel: #13161b;
+  --ghost-border: #232830;
+  --ghost-text: #e6e8eb;
+  --ghost-muted: #8b93a1;
+  --ghost-critical: #ff3b3b;
+  --ghost-high: #ff9f1c;
+  --ghost-medium: #ffd166;
+  --ghost-low: #4cc9f0;
+  --ghost-ok: #2ecc71;
+  --ghost-accent: #7c5cff;
+}
+
+@theme inline {
+  --color-bg: var(--ghost-bg);
+  --color-panel: var(--ghost-panel);
+  --color-line: var(--ghost-border);
+  --color-ink: var(--ghost-text);
+  --color-muted: var(--ghost-muted);
+  --color-critical: var(--ghost-critical);
+  --color-high: var(--ghost-high);
+  --color-medium: var(--ghost-medium);
+  --color-low: var(--ghost-low);
+  --color-ok: var(--ghost-ok);
+  --color-accent: var(--ghost-accent);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, "SFMono-Regular", monospace;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--ghost-bg);
+  color: var(--ghost-text);
+}
+
+body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every number on screen is tabular so columns do not jitter as values change. */
+.num {
+  font-family: var(--font-mono-face), ui-monospace, "SFMono-Regular", monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.panel {
+  background: var(--ghost-panel);
+  border: 1px solid var(--ghost-border);
+  border-radius: 6px;
+}
+
+.hairline {
+  border-color: var(--ghost-border);
+}
+
+/* Dense, readable tables: the alert feed is meant to be scanned, not admired. */
+.dense th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ghost-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--ghost-border);
+  white-space: nowrap;
+}
+
+.dense td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--ghost-border);
+  vertical-align: top;
+}
+
+.dense tbody tr:hover {
+  background: #181c22;
+  cursor: pointer;
+}
+
+.field {
+  background: #0e1116;
+  border: 1px solid var(--ghost-border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  color: var(--ghost-text);
+  font-size: 13px;
+  width: 100%;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--ghost-accent);
+}
+
+.btn {
+  border: 1px solid var(--ghost-border);
+  background: #181c22;
+  color: var(--ghost-text);
+  border-radius: 4px;
+  padding: 5px 11px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--ghost-accent);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--ghost-accent);
+  border-color: var(--ghost-accent);
+  color: #fff;
+}
+
+.btn-danger {
+  border-color: #46262b;
+  color: var(--ghost-critical);
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262c35;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes ghost-pulse {
+  0% { opacity: 0.85; }
+  50% { opacity: 0.25; }
+  100% { opacity: 0.85; }
+}
+
+.pulse {
+  animation: ghost-pulse 1.4s ease-in-out infinite;
+}
