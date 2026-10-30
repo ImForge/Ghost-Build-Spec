@@ -142,3 +142,21 @@ last-resort handler and was dropped — the brain ran silently, and the only
 evidence of the narrator working at all was its absence. `create_app()` now
 installs the format at import time. `basicConfig` is a no-op when handlers
 already exist, so a host that configures logging itself still wins.
+
+## D15 — Approvals only count against a clip that exists
+
+Evidence starts life as `requested`: the brain has asked the camera to seal its
+ring buffer but nothing has arrived. Approving in that window used to be
+accepted, and it looked like it worked — the counter reached 2 of 2 — but the
+unseal check had already gone past, so the clip stayed locked with no way to
+explain why. Approval is now refused until the upload lands, with a message
+saying to try again in a moment.
+
+## D16 — Two nodes on one camera id fight, loudly
+
+The MQTT client id is `node-{cam}`, so starting a second node for the same
+camera makes the broker evict each in turn and neither stays connected long
+enough to answer a command. That surfaced while testing, and it is the right
+behaviour: the alternative — a unique client id per process — would let two
+nodes publish as the same camera and quietly double every count. The conflict is
+visible in both nodes' logs within a second.

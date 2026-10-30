@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Suspense } from "react";
 
 import { Nav } from "@/components/Nav";
 import { LiveProvider } from "@/components/LiveProvider";
@@ -24,7 +25,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           until it pushes everything off screen. */}
       <body className="flex h-full flex-col overflow-hidden bg-bg text-ink">
         <LiveProvider>
-          <Nav />
+          {/* Nav reads usePathname, which makes it dynamic; on a route with
+              parameters it has to sit inside a Suspense boundary to prerender. */}
+          <Suspense fallback={<div className="h-[41px] border-b hairline bg-panel" />}>
+            <Nav />
+          </Suspense>
           <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
         </LiveProvider>
       </body>

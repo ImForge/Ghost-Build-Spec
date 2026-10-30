@@ -21,6 +21,7 @@ import numpy as np
 
 from node import config as node_config
 from node.capture import Capture
+from node.escrow_client import EscrowClient
 from node.perceive import EDGES, Perceiver, UltralyticsMissing, build_event
 from node.privacy import encode_snapshot
 from node.publisher import Publisher
@@ -55,7 +56,9 @@ class Node:
             cfg.cam, cfg.broker, cfg.broker_port,
             node_type="python", source=cfg.source, model=self.perceiver.model_name,
         )
+        self.escrow = EscrowClient(cfg.cam, cfg.brain_url, self.ring)
         self.publisher.on_command("snapshot", self._handle_snapshot)
+        self.publisher.on_command("seal", self.escrow.handle_seal)
 
         self._seq = 0
         self._last_publish = 0.0

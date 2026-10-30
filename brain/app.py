@@ -35,6 +35,7 @@ from brain.constants import (
 )
 from brain.db import Database
 from brain.engine import Engine
+from brain.escrow import Escrow
 from brain.mqtt_bus import MqttBus
 from brain.narrator import Narrator
 from brain.settings import settings
@@ -74,6 +75,7 @@ class Brain:
         rules_mod.load_all()
         self.alerts = AlertManager(self.db, self.bus, self.config)
         self.telegram = Telegram()
+        self.escrow = Escrow(self.db, self.bus)
         self.narrator = Narrator(self.bus, self.world, self.alerts, self.telegram)
         self.engine = Engine(self.world, self.config, self._on_candidate)
 
@@ -82,6 +84,7 @@ class Brain:
         # guard an alert.
         self.alerts.notify = self._notify
         self.alerts.narrate = self.narrator.enqueue
+        self.alerts.seal = self.escrow.request_seal
 
         self._stop = threading.Event()
         self._threads: list[threading.Thread] = []
@@ -200,7 +203,8 @@ class Brain:
         with self.world.lock:
             for state in self.world.cams.values():
                 dropped_tracks += len(state.prune(now))
-        return {"tracks_dropped": dropped_tracks}
+        counts = self.escrow.housekeep(now)
+        return {"tracks_dropped": dropped_tracks, **counts}
 
 
 def create_app() -> FastAPI:
@@ -228,10 +232,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"], allow_headers=["*"],
     )
 
-    from brain.api import admin, alerts, cams, health, rules, zones
+    from brain.api import admin, alerts, cams, evidence, health, rules, zones
 
     for router in (health.router, cams.router, zones.router, rules.router,
-                   alerts.router, admin.router):
+                   alerts.router, evidence.router, admin.router):
         app.include_router(router, prefix="/api", tags=["api"])
 
     @app.get("/", include_in_schema=False)

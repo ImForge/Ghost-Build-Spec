@@ -138,6 +138,7 @@ export interface Stats {
   pixels_out: number;
 }
 
+/** What the brain is willing to say about a sealed clip. Never the key shares. */
 export interface EvidenceSummary {
   id: string;
   alert_id: string | null;
@@ -150,6 +151,10 @@ export interface EvidenceSummary {
   meta: Record<string, unknown> | null;
   approvals: Role[];
   approvals_required: number;
+  keyholder_roles: Role[];
+  unseal_window_s: number;
+  /** When the current unseal lapses and re-approval is needed; null when sealed. */
+  expires_at: number | null;
 }
 
 export interface AuditRow {

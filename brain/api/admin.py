@@ -43,6 +43,23 @@ def whoami(role: str = Depends(require_role)) -> dict[str, Any]:
     return {"role": role, "keyholder_roles": list(KEYHOLDER_ROLES)}
 
 
+@router.post("/debug/seal/{cam}")
+def debug_seal(cam: str, brain=Depends(get_brain)) -> dict[str, Any]:
+    """Trigger a seal without waiting for a real incident. DEBUG=1 only.
+
+    Sealing is normally driven by an alert above the severity floor, which is
+    hard to arrange on demand with a test video that contains no people.
+    """
+    if not settings.debug:
+        raise HTTPException(404, "not found")
+    if brain.config.cam(cam) is None:
+        raise HTTPException(404, f"no such cam: {cam}")
+    evidence_id = brain.escrow.request_seal(
+        {"id": None, "cam": cam, "severity": "critical"}
+    )
+    return {"evidence_id": evidence_id, "cam": cam, "status": "requested"}
+
+
 @router.get("/audit")
 def audit(limit: int = Query(200, ge=1, le=2000), target: str | None = None,
           brain=Depends(get_brain)) -> list[dict[str, Any]]:
