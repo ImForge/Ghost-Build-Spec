@@ -36,10 +36,30 @@ from brain.constants import (
 from brain.db import Database
 from brain.engine import Engine
 from brain.mqtt_bus import MqttBus
+from brain.narrator import Narrator
 from brain.settings import settings
 from brain.state import World
+from brain.telegram import Telegram
 
 log = logging.getLogger("brain.app")
+
+LOG_FORMAT = "%(asctime)s %(levelname)-5s [%(name)s] %(message)s"
+LOG_DATEFMT = "%H:%M:%S"
+
+
+def setup_logging(level: int = logging.INFO) -> None:
+    """Install the project's log format on the root logger.
+
+    This has to happen at import time, not only in main(): the documented way to
+    run the brain is `uvicorn brain.app:app`, which imports this module and never
+    calls main(). uvicorn configures only its own loggers, so without this every
+    [brain.*] INFO line is swallowed by logging's last-resort handler and the
+    brain runs silently. basicConfig is a no-op when handlers already exist, so
+    this never fights a host that has configured logging itself.
+    """
+    logging.basicConfig(
+        level=level, stream=sys.stdout, format=LOG_FORMAT, datefmt=LOG_DATEFMT
+    )
 
 
 class Brain:
@@ -53,7 +73,15 @@ class Brain:
         self.bus = MqttBus(settings.broker_host, settings.broker_port, client_id="brain")
         rules_mod.load_all()
         self.alerts = AlertManager(self.db, self.bus, self.config)
+        self.telegram = Telegram()
+        self.narrator = Narrator(self.bus, self.world, self.alerts, self.telegram)
         self.engine = Engine(self.world, self.config, self._on_candidate)
+
+        # The alert pipeline fires these on creation only, each inside its own
+        # try/except, so a dead Ollama or an unreachable Telegram cannot cost a
+        # guard an alert.
+        self.alerts.notify = self._notify
+        self.alerts.narrate = self.narrator.enqueue
 
         self._stop = threading.Event()
         self._threads: list[threading.Thread] = []
@@ -64,9 +92,13 @@ class Brain:
         self.bus.on("snap", self._on_snap)
 
     # --- lifecycle --------------------------------------------------------
+    def _notify(self, alert: dict[str, Any]) -> None:
+        self.telegram.send_alert(alert, self.config.cam_name(str(alert["cam"])))
+
     def start(self) -> None:
         self.bus.start()
         self.engine.start()
+        self.narrator.start()
         for name, target in (("health", self._health_loop),
                              ("housekeeping", self._housekeeping_loop)):
             thread = threading.Thread(target=target, name=name, daemon=True)
@@ -76,6 +108,7 @@ class Brain:
 
     def stop(self) -> None:
         self._stop.set()
+        self.narrator.stop()
         self.engine.stop()
         for thread in self._threads:
             thread.join(timeout=2.0)
@@ -171,6 +204,8 @@ class Brain:
 
 
 def create_app() -> FastAPI:
+    setup_logging(logging.DEBUG if settings.debug else logging.INFO)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         brain = Brain()
@@ -218,10 +253,7 @@ app = create_app()
 def main() -> int:  # pragma: no cover — convenience entry point
     import uvicorn
 
-    logging.basicConfig(
-        level=logging.INFO, stream=sys.stdout,
-        format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s", datefmt="%H:%M:%S",
-    )
+    setup_logging()
     uvicorn.run(app, host="0.0.0.0", port=settings.brain_port)
     return 0
 

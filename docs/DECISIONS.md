@@ -132,3 +132,13 @@ so re-measuring the same drop against a smaller body read faster each tick and
 reached 10.7 bh/s — not a number a human can produce. The rate is now latched
 once, when a drop is first detected, and only re-latched for a genuinely later
 drop. The tests pin both properties: never zero, never implausible.
+
+## D14 — Logging is configured at import, not in main()
+
+The documented way to run the brain is `uvicorn brain.app:app`, which imports
+the module and never calls `main()`. uvicorn configures only its own loggers, so
+with `basicConfig` in `main()` every `[brain.*]` INFO line went to logging's
+last-resort handler and was dropped — the brain ran silently, and the only
+evidence of the narrator working at all was its absence. `create_app()` now
+installs the format at import time. `basicConfig` is a no-op when handlers
+already exist, so a host that configures logging itself still wins.
