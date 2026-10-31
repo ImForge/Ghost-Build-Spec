@@ -34,6 +34,14 @@ with the same `mosquitto/mosquitto.conf`. Both paths read one config file, so th
 listener blocks are exercised either way. `scripts/dev.*` prefer Docker and fall
 back to a `mosquitto` on `PATH`.
 
+On Windows the native fallback has two traps, both handled by `scripts/dev.ps1`.
+The installer (`winget install EclipseFoundation.Mosquitto`) puts the exe in
+`Program Files\mosquitto` without adding it to `PATH`, so the script looks there
+too. And it registers an auto-start `mosquitto` service on the default config,
+which listens on localhost:1883 only with no websockets: the brain still connects,
+but the dashboard and phones on 9001 never do. The script refuses to start while
+that service is running and prints the admin command that stops it.
+
 ## D5 — Camera-dependent verification goes through `tools/synth.py`
 
 No webcam or phone exists in the build environment. Everything that would need one
