@@ -44,7 +44,8 @@ $Jobs += Start-Process -PassThru $Py -ArgumentList "-m", "uvicorn", "brain.app:a
 
 if (Test-Path (Join-Path $Root "dashboard\node_modules")) {
   Write-Host "[dev] dashboard -> http://localhost:3000"
-  $Jobs += Start-Process -PassThru -WorkingDirectory (Join-Path $Root "dashboard") "npm" -ArgumentList "run", "dev"
+  # npm.cmd, not npm: Start-Process cannot launch the npm.ps1 shim that "npm" resolves to.
+  $Jobs += Start-Process -PassThru -WorkingDirectory (Join-Path $Root "dashboard") "npm.cmd" -ArgumentList "run", "dev"
 } else {
   Write-Host "[dev] dashboard skipped - run: cd dashboard ; npm install"
 }
