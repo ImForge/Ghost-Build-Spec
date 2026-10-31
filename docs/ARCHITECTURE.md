@@ -112,7 +112,7 @@ not silently.
         ▼
   zip of JPEGs
         │
-  AES-256-GCM  ◄── key (generated here, never sent)
+  AES-128-GCM  ◄── key (generated here, never sent)
         │                │
         │                └── Shamir 2-of-3 ──┬── share 1 ─► security
         ▼                                    ├── share 2 ─► warden

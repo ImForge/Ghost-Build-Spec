@@ -42,7 +42,9 @@ The honest limitations of that claim are written down in
 
 ## Quick start
 
-Prerequisites: Python 3.11, Node 20+, Docker (for the broker only).
+Prerequisites: Python 3.11, Node 20+, Docker (for the broker only). On Windows
+without Docker, `winget install EclipseFoundation.Mosquitto` works instead; stop
+the service it registers, see [`docs/DECISIONS.md`](docs/DECISIONS.md) D4.
 
 ```bash
 cp .env.example .env

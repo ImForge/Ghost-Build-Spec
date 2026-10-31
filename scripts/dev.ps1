@@ -9,16 +9,33 @@ if (-not (Test-Path $Py)) {
 }
 
 # --- broker: docker first, native mosquitto as fallback (see docs/DECISIONS.md D4)
+# The Windows installer registers a mosquitto service on its default config
+# (localhost:1883 only, no websockets). Left running it holds 1883 and 9001 stays dead.
+$Svc = Get-Service mosquitto -ErrorAction SilentlyContinue
+if ($Svc -and $Svc.Status -eq "Running") {
+  Write-Error "the mosquitto Windows service is running on its default config (no websockets on 9001) - stop it from an admin PowerShell: Stop-Service mosquitto ; Set-Service mosquitto -StartupType Manual"
+}
+
+# The installer does not add itself to PATH, so also look where it puts the exe.
+$Mosquitto = (Get-Command mosquitto -ErrorAction SilentlyContinue).Source
+$Installed = Join-Path $env:ProgramFiles "mosquitto\mosquitto.exe"
+if (-not $Mosquitto -and (Test-Path $Installed)) { $Mosquitto = $Installed }
+
+# With docker absent, calling it throws under ErrorActionPreference Stop.
+$Docker = $false
+if (Get-Command docker -ErrorAction SilentlyContinue) {
+  try { docker info *> $null; $Docker = $LASTEXITCODE -eq 0 } catch { }
+}
+
 $Jobs = @()
-docker info *> $null
-if ($LASTEXITCODE -eq 0) {
+if ($Docker) {
   Write-Host "[dev] starting mosquitto via docker compose"
   docker compose up -d mosquitto
-} elseif (Get-Command mosquitto -ErrorAction SilentlyContinue) {
-  Write-Host "[dev] no docker daemon - starting native mosquitto"
-  $Jobs += Start-Process -PassThru mosquitto -ArgumentList "-c", (Join-Path $Root "mosquitto\mosquitto.conf")
+} elseif ($Mosquitto) {
+  Write-Host "[dev] no docker daemon - starting native mosquitto ($Mosquitto)"
+  $Jobs += Start-Process -PassThru $Mosquitto -ArgumentList "-c", (Join-Path $Root "mosquitto\mosquitto.conf")
 } else {
-  Write-Error "no docker and no mosquitto on PATH - install one of them"
+  Write-Error "no docker and no mosquitto (on PATH or in $env:ProgramFiles\mosquitto) - install one of them"
 }
 
 $BrainPort = if ($env:BRAIN_PORT) { $env:BRAIN_PORT } else { "8000" }
@@ -27,7 +44,8 @@ $Jobs += Start-Process -PassThru $Py -ArgumentList "-m", "uvicorn", "brain.app:a
 
 if (Test-Path (Join-Path $Root "dashboard\node_modules")) {
   Write-Host "[dev] dashboard -> http://localhost:3000"
-  $Jobs += Start-Process -PassThru -WorkingDirectory (Join-Path $Root "dashboard") "npm" -ArgumentList "run", "dev"
+  # npm.cmd, not npm: Start-Process cannot launch the npm.ps1 shim that "npm" resolves to.
+  $Jobs += Start-Process -PassThru -WorkingDirectory (Join-Path $Root "dashboard") "npm.cmd" -ArgumentList "run", "dev"
 } else {
   Write-Host "[dev] dashboard skipped - run: cd dashboard ; npm install"
 }
